@@ -1,0 +1,338 @@
+import React, { useState, useEffect } from 'react';
+import { CCard, CCardBody, CCardHeader, CInputGroup, CInputGroupText } from '@coreui/react';
+import Multiselect from 'multiselect-react-dropdown';
+import axios from 'axios';
+
+const MultiSelectPage = () => {
+    const [consumer, setConsumer] = useState('');
+    const [domain, setDomain] = useState('');
+    const [feature, setFeature] = useState('');
+    const [subFeature, setSubFeature] = useState('');
+    const [element, setElement] = useState('');
+    const [filteredData, setFilteredData] = useState([]);
+    const [consumerOptions, setConsumerOptions] = useState([]);
+    const [domainOptions, setDomainOptions] = useState([]);
+    const [featureOptions, setFeatureOptions] = useState([]);
+    const [subFeatureOptions, setSubFeatureOptions] = useState([]);
+    const [elementOptions, setElementOptions] = useState([]);
+
+    const [consumerOptions2, setConsumerOptions2] = useState([]);
+    const [domainOptions2, setDomainOptions2] = useState([]);
+    const [featureOptions2, setFeatureOptions2] = useState([]);
+    const [subFeatureOptions2, setSubFeatureOptions2] = useState([]);
+    const [elementOptions2, setElementOptions2] = useState([]);
+
+    const [selectedConsumer, setSelectedConsumer] = useState([]);
+    const [selectedDomain, setSelectedDomain] = useState([]);
+    const [selectedFeature, setSelectedFeature] = useState([]);
+    const [selectedSubFeature, setSelectedSubFeature] = useState([]);
+    const [selectedElement, setSelectedElement] = useState([]);
+
+    useEffect(() => {
+        axios.get('http://localhost:8080/api/inventory-details')
+            .then(response => {
+                setFilteredData(response.data.inventoryDetails);
+                populateDropdowns(response.data.inventoryDetails);
+            })
+            .catch(error => {
+                console.error('Error fetching data:', error);
+            });
+    }, []);
+
+
+    const populateDropdowns = (data) => {
+        const consumers = [];
+        const domains = [];
+        const features = [];
+        const subFeatures = [];
+        const elements = [];
+
+
+
+        const traverse = (array) => {
+            let cons = ''
+            let dom = ''
+            let fea = ''
+            let subfea = ''
+            let elem = ''
+            for (let i = 0; i < array.length; i++) {
+                const item = array[i];
+                if (typeof item === 'string') {
+                    // if (i === 0) {
+                    consumers.push({ name: item, id: item });
+                    cons = item + '^'
+
+                    // } else if (subFeatures.length === 0) {
+                    //     subFeatures.push({ name: item, id: item });
+                    // } else if (elements.length === 0) {
+                    //     elements.push({ name: item, id: item });
+                    // }
+                } else if (Array.isArray(item)) {
+                    // traverse(item);
+                    for (let j = 0; j < array[i].length; j++) {
+                        const item2 = array[i][j];
+                        if (typeof item2 === 'string') {
+                            // if (selectedConsumer || selectedConsumer === item[j])
+                            domains.push({ name: item2, id: cons + item2 });
+                            dom = item2 + '^'
+                        } else if (Array.isArray(item2)) {
+
+                            for (let k = 0; k < array[i][j].length; k++) {
+                                const item3 = array[i][j][k];
+                                if (typeof item3 === 'string') {
+                                    features.push({ name: item3, id: cons + dom + item3 });
+                                    fea = item3 + '^'
+                                } else if (Array.isArray(item3)) {
+                                    for (let l = 0; l < array[i][j][k].length; l++) {
+                                        const item4 = array[i][j][k][l];
+                                        if (typeof item4 === 'string') {
+                                            subFeatures.push({ name: item4, id: cons + dom + fea + item4 });
+                                            subfea = item4 + '^'
+                                        } else if (Array.isArray(item4)) {
+                                            for (let m = 0; m < array[i][j][k][l].length; m++) {
+                                                const item5 = array[i][j][k][l][m];
+                                                if (typeof item5 === 'string') {
+                                                    elements.push({ name: item5, id: cons + dom + fea + subfea + item5 });
+                                                }
+                                            }
+
+                                        }
+
+                                    }
+
+                                }
+
+                            }
+                        }
+
+                    }
+                }
+            }
+        };
+        console.log(data)
+
+        traverse(data[0]);
+
+        setConsumerOptions(consumers);
+        setDomainOptions(domains);
+        setDomainOptions2(domains);
+        setFeatureOptions(features);
+        setSubFeatureOptions(subFeatures);
+        setElementOptions(elements);
+    };
+
+
+    const handleConsumerChange = (selectedOptions) => {
+        setConsumer(selectedOptions[0].value);
+    };
+
+    const handleDomainChange = (selectedOptions) => {
+        setDomain(selectedOptions[0].value);
+    };
+
+    const handleFeatureChange = (selectedOptions) => {
+        setFeature(selectedOptions[0].value);
+    };
+
+
+    const handleSubFeatureChange = (selectedOptions) => {
+        setFeature(selectedOptions[0].value);
+    };
+    const handleElementChange = (selectedOptions) => {
+        setDomain(selectedOptions[0].value);
+    };
+
+
+    const filterDomain = (selectedConsumers) => {
+        // console.log(selectedConsumers)
+
+        let filteredDomains = domainOptions;
+        if (selectedConsumers.length > 0) {
+            filteredDomains = domainOptions.filter(domain => {
+                // Extract the consumer ID from the domain ID
+                const consumerId = domain.id.split('^')[0];
+                // console.log(consumerId)
+                // Check if the consumer ID is included in the selected consumers list
+                // return selectedConsumers.includes(consumerId);
+                return selectedConsumers.find(consumer => consumer.id === consumerId) !== undefined;
+
+            });
+        }
+        // console.log(filteredDomains)
+        setDomainOptions2(filteredDomains);
+    };
+
+    const filterfeature = (selectedDom) => {
+        // console.log(selectedDom)
+
+        let filteredfeatures = featureOptions;
+        if (selectedDom.length > 0) {
+            filteredfeatures = featureOptions.filter(feat => {
+
+                const DomainID_p1 = feat.id.split('^', 2)[0];
+                const DomainID_p2 = feat.id.split('^', 2)[1];
+                const DomainID = DomainID_p1 + "^" + DomainID_p2
+
+                // console.log(DomainID)
+
+                return selectedDom.find(fe => fe.id === DomainID) !== undefined;
+
+
+            });
+        }
+        // console.log(filteredfeatures)
+        setFeatureOptions2(filteredfeatures);
+    };
+    const filtersubFeature = (selectedFeatures) => {
+        console.log(selectedFeatures)
+
+        let filteredsubFeature = subFeatureOptions;
+        if (selectedFeatures.length > 0) {
+            filteredsubFeature = subFeatureOptions.filter(subFeat => {
+                // Extract the consumer ID from the domain ID
+                const DomainID_p1 = subFeat.id.split('^', 3)[0];
+                const DomainID_p2 = subFeat.id.split('^', 3)[1];
+                const DomainID_p3 = subFeat.id.split('^', 3)[2];
+                const featureId = DomainID_p1 + "^" + DomainID_p2 + "^" + DomainID_p3
+                console.log(featureId)
+                // Check if the consumer ID is included in the selected consumers list
+                // return selectedConsumers.includes(consumerId);
+                return selectedFeatures.find(sF => sF.id === featureId) !== undefined;
+
+            });
+        }
+        console.log(filteredsubFeature)
+        setSubFeatureOptions2(filteredsubFeature);
+    };
+    const filterElem = (selectedsubFeatures) => {
+        console.log(selectedsubFeatures)
+
+        let filteredElem = elementOptions;
+        if (selectedsubFeatures.length > 0) {
+            filteredElem = elementOptions.filter(Elem => {
+                // Extract the consumer ID from the domain ID
+                const DomainID_p1 = Elem.id.split('^', 4)[0];
+                const DomainID_p2 = Elem.id.split('^', 4)[1];
+                const DomainID_p3 = Elem.id.split('^', 4)[2];
+                const DomainID_p4 = Elem.id.split('^', 4)[3];
+                const subfeatureId = DomainID_p1 + "^" + DomainID_p2 + "^" + DomainID_p3 + "^" + DomainID_p4
+                console.log(subfeatureId)
+                // Check if the consumer ID is included in the selected consumers list
+                // return selectedConsumers.includes(consumerId);
+                return selectedsubFeatures.find(el => el.id === subfeatureId) !== undefined;
+
+            });
+        }
+        console.log(filteredElem)
+        setElementOptions2(filteredElem);
+    };
+
+    // Implement similar onChange handlers for subFeature and element
+
+    return (
+        <div>
+            <CCard>
+                <CCardHeader>Multi-Select Dropdowns</CCardHeader>
+                <CCardBody>
+                    <CInputGroup>
+                        <CInputGroupText>Consumer</CInputGroupText>
+                        <Multiselect
+                            options={consumerOptions}
+                            onChange={handleConsumerChange}
+                            selectedValues={[consumer]}
+                            onSelect={(selectedList) => {
+                                setDomainOptions2(domainOptions)
+                                setSelectedConsumer(selectedList)
+                                if (selectedList.id != "") {
+                                    filterDomain(selectedList)
+                                }
+
+
+                            }}
+                            onRemove={(selectedList) => setSelectedConsumer(selectedList)}
+                            displayValue="name"
+                            placeholder="Select Consumer"
+                        />
+                    </CInputGroup>
+                    <CInputGroup>
+                        <CInputGroupText>Domain</CInputGroupText>
+                        <Multiselect
+                            options={domainOptions2}
+                            onChange={handleDomainChange}
+                            selectedValues={[domain]}
+                            onSelect={(selectedList) => {
+                                setFeatureOptions2(featureOptions)
+                                setSelectedDomain(selectedList)
+                                if (selectedList.id != "") {
+                                    filterfeature(selectedList)
+                                }
+                            }}
+                            onRemove={(selectedList) => setSelectedDomain(selectedList)}
+                            displayValue="name"
+                            placeholder="Select Domain"
+                        />
+                    </CInputGroup>
+                    <CInputGroup>
+                        <CInputGroupText>Feature</CInputGroupText>
+                        <Multiselect
+                            options={featureOptions2}
+                            onChange={handleFeatureChange}
+                            selectedValues={[feature]}
+                            onSelect={(selectedList) => {
+                                setSubFeatureOptions2(subFeatureOptions)
+                                setSelectedFeature(selectedList)
+                                if (selectedList.id != "") {
+                                    filtersubFeature(selectedList)
+                                }
+                            }}
+                            onRemove={(selectedList) => setSelectedFeature(selectedList)}
+                            displayValue="name"
+                            placeholder="Select Feature"
+                        />
+                    </CInputGroup>
+                    {/* Similar Multiselect components for subFeature and element */}
+                    <CInputGroup>
+                        <CInputGroupText>Sub Feature</CInputGroupText>
+                        <Multiselect
+                            options={subFeatureOptions2}
+                            onSelect={(selectedList) => {
+                                setElementOptions2(elementOptions)
+                                setSelectedSubFeature(selectedList)
+                                if (selectedList.id != "") {
+                                    filterElem(selectedList)
+                                }
+                            }}
+                            onRemove={(selectedList) => setSelectedSubFeature(selectedList)}
+                            displayValue="name"
+                            placeholder="Select SubFeature" onChange={handleSubFeatureChange}
+                            selectedValues={[subFeature]}
+                        /></CInputGroup>
+                    <CInputGroup>
+                        <CInputGroupText>Element</CInputGroupText>
+                        <Multiselect
+                            options={elementOptions2}
+                            onSelect={(selectedList) => setSelectedElement(selectedList)}
+                            onRemove={(selectedList) => setSelectedElement(selectedList)}
+                            displayValue="name"
+                            placeholder="Select Element" onChange={handleElementChange}
+                            selectedValues={[element]}
+                        /></CInputGroup>
+                </CCardBody>
+            </CCard>
+            {/* Display filtered data */}
+            <CCard>
+                <CCardHeader>Filtered Data</CCardHeader>
+                <CCardBody>
+                    <ul>
+                        {elementOptions.forEach((obj) => (
+                            console.log(elementOptions2)
+
+                        ))}
+                    </ul>
+                </CCardBody>
+            </CCard>
+        </div>
+    );
+};
+
+export default MultiSelectPage;
