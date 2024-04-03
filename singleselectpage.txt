@@ -1,0 +1,335 @@
+import React, { useState, useEffect } from 'react';
+import {
+    CCard,
+    CCardBody,
+    CCardHeader,
+    CInputGroup,
+    CInputGroupText,
+    CFormSelect, // Import CFormSelect
+} from '@coreui/react';
+import axios from 'axios'; // Import Axios library
+
+const MultiSelectPage = () => {
+    // State variables to store selected optionss for each dropdown
+    const [consumer, setConsumer] = useState('');
+    const [domain, setDomain] = useState('');
+    const [feature, setFeature] = useState('');
+    const [subFeature, setSubFeature] = useState('');
+    const [element, setElement] = useState('');
+
+    // const [cons, setCons] = useState('');
+    // const [dom, setDom] = useState('');
+    // const [fea, setFea] = useState('');
+    // const [subFea, setSubFea] = useState('');
+    // const [elem, setElem] = useState('');
+
+    let [optionconsumer, setoptionConsumer] = useState([]);
+    let [optiondomain, setoptionDomain] = useState([]);
+    let [optionfeature, setoptionFeature] = useState([]);
+    let [optionsubFeature, setoptionSubFeature] = useState([]);
+    let [optionelement, setoptionElement] = useState([]);
+    let [transformed, settransformed] = useState([]);
+
+    // State variable to store the filtered data
+    const [filteredData, setFilteredData] = useState([]);
+
+    // Fetch data from API endpoint
+    useEffect(() => {
+        axios.get('http://localhost:8080/api/inventory-details') // Update URL accordingly
+            .then(response => {
+                // Once data is fetched, update filteredData state
+                setFilteredData(response.data.inventoryDetails);
+            })
+            .catch(error => {
+                console.error('Error fetching data:', error);
+            });
+    }, []);
+
+
+
+
+    const convertData = (input) => {
+        const output = [];
+        // transformed = []
+        // console.log("test")
+        // console.log(input)
+        function traverse(array, cons, dom, fea, subfea, elem) {
+            for (let i = 0; i < array.length; i++) {
+                if (Array.isArray(array[i])) {
+                    if (i === 0) {
+                        cons = array[i][0];
+                    } else if (i === 2) {
+                        dom = array[i][0];
+                    } else if (i === 4) {
+                        fea = array[i][0];
+                    } else if (i === 6) {
+                        subfea = array[i][0];
+                    }
+                    traverse(array[i], cons, dom, fea, subfea);
+                } else {
+                    if (i === 0) {
+                        elem = array[i];
+                        // console.log(elem)
+                        // output.push({
+                        //     "consumer": cons,
+                        //     "domain": dom,
+                        //     "feature": fea,
+                        //     "subfeature": subfea,
+                        //     "element": elem
+                        // });
+                    }
+                }
+            }
+        }
+
+        traverse(input);
+        return output;
+    }
+
+
+    const generateOptions = (data, level) => {
+        const options = [];
+        const tempoptionconsumer = [];
+        transformed = []
+        optionconsumer = []
+        optiondomain = []
+        optionfeature = []
+        optionsubFeature = []
+        optionelement = []
+        const output = []
+        let cons = ''
+        let dom = ''
+        let fea = ''
+        let subfea = ''
+        let elem = ''
+        let generateOptionsRecursive = (item, currentLevel) => {
+            if (currentLevel === level) {
+                options.push(<option key={item} value={item}>{item}</option>);
+            } else if (Array.isArray(item)) {
+                // Recursively call generateOptionsRecursive for nested arrays
+                generateOptionsRecursive(item[1], currentLevel + 1);
+            }
+        };
+
+        // Start generating options recursively
+        generateOptionsRecursive(data, 0);
+        // console.log(options);
+        options.forEach(opt => {
+            opt.props.value.forEach(opt2 => {
+                // console.log(opt2)
+                opt2.forEach(opt3 => {
+                    if (typeof opt3 === 'string') {
+                        // console.log("Output : ");
+                        // console.log(opt3)
+
+                        optionconsumer.push(<option key={opt3} value={opt3}>{opt3}</option>)
+                        cons = opt3
+                    } else if (Array.isArray(opt3)) {
+                        opt3.forEach(opt4 => {
+                            if (typeof opt4 === 'string') {
+                                // console.log("Output : ");
+                                // console.log(opt3)
+
+                                optiondomain.push(<option key={+ opt4} value={opt4}>{opt4}</option>)
+                                dom = opt4
+
+                            } else if (Array.isArray(opt4)) {
+                                opt4.forEach(opt5 => {
+                                    if (typeof opt5 === 'string') {
+                                        // console.log("Output : ");
+                                        // console.log(opt3)
+
+                                        optionfeature.push(<option key={opt3 + opt4 + opt5} value={opt5}>{opt5}</option>)
+                                        fea = opt5
+                                    } else if (Array.isArray(opt5)) {
+                                        opt5.forEach(opt6 => {
+                                            if (typeof opt6 === 'string') {
+                                                // console.log("Output : ");
+                                                // console.log(opt3)
+
+                                                optionsubFeature.push(<option key={opt3 + opt4 + opt5 + opt6} value={opt6}>{opt6}</option>)
+                                                subfea = opt6
+                                            } else if (Array.isArray(opt6)) {
+                                                opt6.forEach(opt7 => {
+                                                    if (typeof opt7 === 'string') {
+                                                        // console.log("Output : ");
+                                                        // console.log(opt3)
+
+                                                        optionelement.push(<option key={opt3 + opt4 + opt5 + opt6 + opt7} value={opt7}>{opt7}</option>)
+                                                        console.log(opt7)
+                                                        elem = opt7
+
+                                                        output.push({
+                                                            "consumer": cons,
+                                                            "domain": dom,
+                                                            "feature": fea,
+                                                            "subfeature": subfea,
+                                                            "element": elem
+                                                        })
+
+                                                    }
+
+
+                                                })
+                                            }
+                                        })
+                                    }
+                                })
+                            }
+                        })
+                    }
+                })
+            })
+
+        })
+
+        // console.log(output)
+        transformed = output
+    };
+
+
+
+
+
+    // Function to filter data based on selected optionss
+    const filterData = () => {
+        // Filtered data based on selected optionss
+        let filtered = filteredData;
+        if (consumer) {
+            filtered = filtered.filter(item => item[0] === consumer);
+        }
+        if (domain) {
+            filtered = filtered.filter(item => item[1][0] === domain);
+        }
+        if (feature) {
+            filtered = filtered.filter(item => item[1][1][0] === feature);
+        }
+        if (subFeature) {
+            filtered = filtered.filter(item => item[1][1][1][0] === subFeature);
+        }
+        if (element) {
+            filtered = filtered.filter(item => item[1][1][1][1][0] === element);
+        }
+
+        // Update filtered data state
+        setFilteredData(filtered);
+    };
+
+    // Effect to trigger filtering when dropdown optionss change
+    useEffect(() => {
+        filterData();
+    }, [consumer, domain, feature, subFeature, element]);
+
+    return (
+
+        <div>
+            {/* {console.log(filteredData)} */}
+            {generateOptions(filteredData, 0)}
+            <CCard>
+                <CCardHeader>Multi-Select Dropdowns</CCardHeader>
+                <CCardBody>
+                    <CInputGroup>
+                        <CInputGroupText>Consumer</CInputGroupText>
+                        <CFormSelect // Use CFormSelect instead of CSelect
+                            custom
+                            value={consumer}
+                            onChange={(e) => setConsumer(e.target.value)}
+                        >
+                            <option options="">Select Consumer</option>
+                            {/* {generateOptions(filteredData)} */}
+                            {optionconsumer}
+
+                            {/* {console.log(generateOptions(filteredData))} */}
+                        </CFormSelect>
+                    </CInputGroup>
+                    <CInputGroup>
+                        <CInputGroupText>Domain</CInputGroupText>
+                        <CFormSelect // Use CFormSelect instead of CSelect
+                            custom
+                            // options={domain}
+                            onChange={(e) => setDomain(e.target.value)}
+                        >
+                            <option options="">Select Domain</option>
+                            {optiondomain}
+                            {/* Generate options for domain */}
+                        </CFormSelect>
+                    </CInputGroup>
+                    <CInputGroup>
+                        <CInputGroupText>Feature</CInputGroupText>
+                        <CFormSelect // Use CFormSelect instead of CSelect
+                            custom
+                            // options={feature}
+                            onChange={(e) => setFeature(e.target.value)}
+                        >
+                            <option options="">Select Feature</option>
+                            {optionfeature}
+                            {/* Generate options for feature */}
+                        </CFormSelect>
+                    </CInputGroup>
+                    <CInputGroup>
+                        <CInputGroupText>SubFeature</CInputGroupText>
+                        <CFormSelect // Use CFormSelect instead of CSelect
+                            custom
+                            // options={subFeature}
+                            onChange={(e) => setSubFeature(e.target.value)}
+                        >
+                            <option options="">Select SubFeature</option>
+                            {optionsubFeature}
+                            {/* Generate options for subfeature */}
+                        </CFormSelect>
+                    </CInputGroup>
+                    <CInputGroup>
+                        <CInputGroupText>Element</CInputGroupText>
+                        <CFormSelect // Use CFormSelect instead of CSelect
+                            custom
+                            // options={element}
+                            onChange={(e) => setElement(e.target.value)}
+                        >
+                            <option options="">Select Element</option>
+                            {optionelement}
+                            {/* Generate options for element */}
+                        </CFormSelect>
+                    </CInputGroup>
+                    {/* Add more dropdowns for domain, feature, subfeature, and element */}
+                </CCardBody>
+            </CCard>
+            {/* Display filtered data */}
+            <CCard>
+                <CCardHeader>Filtered Data</CCardHeader>
+                <CCardBody>
+                    <ul>
+                        {filteredData.map((item, index) => (
+                            <li key={index}>
+
+                                {Object.keys(item).map((key, idx) => (
+                                    <div key={idx}>{key}: {item[key]}</div>
+                                ))}  </li>
+                        ))}
+                    </ul>
+                </CCardBody>
+                {convertData(filteredData)}
+                {console.log(transformed)}
+            </CCard>
+        </div>
+    );
+};
+
+export default MultiSelectPage;
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
