@@ -1,0 +1,108 @@
+from diagrams import Cluster, Diagram
+from diagrams.gcp.compute import GKE,  ComputeEngine,Run
+from diagrams.gcp.database import Spanner, Firestore, Bigtable, Memorystore
+from diagrams.gcp.network import VPC, LoadBalancing
+from diagrams.gcp.security import Iam
+from diagrams.gcp.storage import Storage
+from diagrams.gcp.security import IAP
+from diagrams.programming.flowchart import Database
+from diagrams.gcp.compute import Functions
+from diagrams.gcp.analytics import PubSub
+from diagrams.gcp.analytics import BigQuery,DataCatalog
+from diagrams.gcp.analytics import Composer,Dataflow
+from diagrams.gcp.api import APIGateway
+from diagrams.gcp.migration import TransferAppliance
+from diagrams.gcp.devtools import SDK
+from diagrams.gcp.ml import AIPlatform
+from diagrams.aws.enduser import DesktopAndAppStreaming
+
+with Diagram("Project MoonBank Architecture", show=False):
+
+    with Cluster("Compute Resources"):
+        gke2 = GKE("GKE")
+        cloudRun =Run("Cloud Run")
+        cloud_functions = Functions("Cloud Functions")
+        # compute_engine = ComputeEngine("Compute Engine")
+
+    with Cluster("Storage"):
+        cloud_storage = Storage("Cloud Storage")
+        spanner = Spanner("Cloud Spanner")
+     
+        firestore = Firestore("Firestore")
+        memorystore = Memorystore("Memorystore")
+        bigtable = Bigtable("Bigtable")
+
+    with Cluster("Networking"):
+        vpc = VPC("VPC Networking")
+        pubsub = PubSub("Pub/Sub")
+
+    # with Cluster("Project Design"):
+    #     organization = Iam("Organization")
+    #     folder_hierarchy = Database("Folder Hierarchy")
+
+    # with Cluster("Permission Considerations"):
+    #     iam = Iam("IAM")
+    #     predefined_roles = Iam("Predefined Roles")
+    #     custom_roles = Iam("Custom Roles")
+    #     separation_of_duties = Iam("Separation of Duties")
+
+    with Cluster("Web Infrastructure"):
+        # end_user = Internet("End User")
+        laptop = DesktopAndAppStreaming("Laptop")
+        mobile = DesktopAndAppStreaming("Mobile")
+        # gke = GKE("GKE")
+        apiGateway = APIGateway("Gateway")
+        cloud_cdn = Storage("Cloud CDN")
+        loadBal = LoadBalancing("Load Balancer")
+        iaP = IAP("Identity-Aware Proxy")
+        iam = Iam("IAM")
+        cloud_cdn >> apiGateway >> loadBal >> iaP  << cloud_functions
+
+        loadBal >> iam << cloudRun
+        gke2 >> iam 
+        
+        
+
+    with Cluster("Storage Infrastructure"):
+        firestore >> spanner >> cloud_storage
+        cloud_storage >> memorystore
+        cloud_storage >> bigtable
+
+    with Cluster("Real Time Processing Infrastructure"):
+        dF = Dataflow("Cloud Dataflow")
+        composer =Composer("Cloud Composer")
+        loadBal >> gke2 >> vpc >> pubsub >> dF >> bigtable 
+        cloud_functions >> vpc
+        cloud_functions >> spanner
+        dF >> composer  >> spanner
+        pubsub >> vpc
+
+    with Cluster("Batch Processing Infrastructure"):
+        transferApp = TransferAppliance("TransferAppliance")
+        batch =SDK("Cloud Batch")
+        cloudRun >> vpc >> transferApp >>spanner
+        vpc >> batch >> spanner
+
+    with Cluster("Analytics Infrastructure"):
+        ai = AIPlatform("AI Platform")
+        bigquery = BigQuery("BigQuery")
+        spanner >> Composer("Cloud Composer") >> bigquery
+        spanner >> ai
+        
+        
+
+    with Cluster("High Availability and Disaster Recovery"):
+        gke2 >> GKE("Multiple Regions")
+        GKE("Automatic Failover")
+        cloud_storage >> Storage("Multi-Region Storage")
+        spanner >> Spanner("Multi-Region Cloud Spanner")
+        DataCatalog("Backup Processes")
+
+    # Linking clusters
+    networking = vpc >> pubsub
+
+    laptop >> cloud_cdn << mobile
+    # project_design = organization >> folder_hierarchy
+    # permission_considerations = [iam, predefined_roles, custom_roles, separation_of_duties]
+
+    # networking >> project_design >> permission_considerations
