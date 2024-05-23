@@ -1,0 +1,184 @@
+import pandas as pd
+
+# Input data
+data = {
+    "ID": [176286, 176287, 176288, 176289, 176290, 176291, 176292],
+    "KONTO_ID": ["K00553", "K00553", "K00553", "K00553", "K00553", "K00553", "K00553"],
+    "BUCHUNGS_ID": ["ANFANG_018170", "160076661", "160076662", "", "", "", ""],
+    "DATUM": ["31-Dec-22", "20-Mar-23", "20-Mar-23", "22-Jun-23", "22-Jun-23", "22-Jun-23", "28-Jun-23"],
+    "DATUM_VALUTA": ["31-Dec-22", "20-Mar-23", "20-Mar-23", "22-Jun-23", "22-Jun-23", "22-Jun-23", "28-Jun-23"],
+    "DATUM_ANSCH_VERAEUSS": ["31-Dec-22", "20-Mar-23", "20-Mar-23", "22-Jun-23", "22-Jun-23", "22-Jun-23", "28-Jun-23"],
+    "DATUM_ZUFLUSS": ["31-Dec-22", "20-Mar-23", "20-Mar-23", "22-Jun-23", "22-Jun-23", "22-Jun-23", "28-Jun-23"],
+    "WHG_ISO": ["USD", "USD", "USD", "USD", "USD", "USD", "USD"],
+    "WHG_BETRAG_VORZEICHEN": [5750.73, 29792.75, -7857.83, 34290.42, 3090000.00, -9044.10, -3142931.97],
+    "WHG_BETRAG_ABSOLUT": [5750.73, 29792.75, 7857.83, 34290.42, 3090000.00, 9044.10, 3142931.97],
+    "DEVISEN_KURS": [1.067650761, 1.070750000, 1.073750000, 1.100500000, 1.039150000, 1.103500000, 1.095200000],
+    "EUR_BETRAG": [5386.34, 27824.19, -7318.12, 31158.95, 2973584.18, -8195.83, -2869733.35],
+    "EIN_AUSBUCHUNG": ["Haben", "Haben", "Soll", "Haben", "Haben", "Soll", "Soll"],
+    "STORNO_KENNZ": ["-", "-", "-", "-", "-", "-", "-"]
+}
+
+# Create DataFrame
+df = pd.DataFrame(data)
+
+# Prepare output columns
+output_columns = ["BEST_ID", "VERSION", "NEUESTE_VERSION", "MATCHED_ID", "KONTO_ID", "DATUM_ANSCHAFFUNG", "DATUM_VERAEUSSERUNG", "BESTAND", "WHG_ISO", "WHG_URSPRUNG", "WHG_MINDERUNG", "WHG_REST"]
+output_data = []
+rec =0
+sub_whg_minderung=0
+prev_whg_minderung=0
+sum_whg_minderung=0
+# # Process each Haben record
+# for haben_row in df[df['EIN_AUSBUCHUNG'] == 'Haben'].itertuples():
+#     version = 0
+#     newest_version = 0
+#     matched_id = 0
+#     # whg_rest = haben_row.WHG_BETRAG_ABSOLUT
+#     whg_minderung = 0.0
+#     whg_ursprung = haben_row.WHG_BETRAG_ABSOLUT
+#     datum_anschaffung = haben_row.DATUM_ANSCH_VERAEUSS
+#     datum_veraeusserung = "02-Jan-00"
+#     bestand = "BESTAND"
+#     whg_rest = whg_ursprung - whg_minderung
+#     # Initial entry
+#     output_data.append([
+#         haben_row.ID, version, newest_version, matched_id, haben_row.KONTO_ID, datum_anschaffung, datum_veraeusserung,
+#         bestand, haben_row.WHG_ISO, whg_ursprung, whg_minderung, whg_rest
+#     ])
+    
+#     # Find matching entries
+#     # prev_whg_minderung=0
+    
+#     while whg_rest > 0:
+#         try:
+#             if sub_whg_minderung>0:
+#                 # print(df[df['EIN_AUSBUCHUNG'] == 'Soll'].shape[0])
+#                 # print ('rec: '+ str(rec))
+#                 if df[df['EIN_AUSBUCHUNG'] == 'Soll'].shape[0] >rec:
+#                     matched_soll = df[ (df['EIN_AUSBUCHUNG'] == 'Soll')  ].iloc[rec-1]
+#                     rec+=1
+#                 else:
+#                     matched_soll = df[ (df['EIN_AUSBUCHUNG'] == 'Soll')  ].iloc[rec-1]
+#                 # rec+=1
+#             else:
+#                 matched_soll = df[ (df['EIN_AUSBUCHUNG'] == 'Soll')  ].iloc[rec]
+#                 rec+=1
+#         except IndexError:
+#             print ('recError: '+ str(rec))
+#             break  # No more matching entries
+        
+#         matched_id = matched_soll.ID
+#         temp_whg_minderung = matched_soll.WHG_BETRAG_ABSOLUT
+#         sub_whg_minderung = temp_whg_minderung - prev_whg_minderung
+        
+#         # print(sub_whg_minderung)
+#         if (temp_whg_minderung>whg_rest):
+#             if sub_whg_minderung>0:
+#                 whg_minderung = min(temp_whg_minderung, whg_rest)
+#             else:
+#                 whg_minderung = min(temp_whg_minderung, whg_rest)
+
+#         else:
+#             whg_minderung = min(sub_whg_minderung, whg_rest)
+        
+#         # sum_whg_minderung += whg_minderung
+#         # if sum_whg_minderung == temp_whg_minderung:
+#         #     sum_whg_minderung = 0
+#             # whg_minderung = min(temp_whg_minderung, whg_rest)
+#         whg_rest -= whg_minderung
+#         datum_veraeusserung = matched_soll.DATUM_ANSCH_VERAEUSS
+#         version += 1
+#         newest_version = 1 if whg_rest == 0 else 0
+#         # if whg_rest == 0 :
+#         prev_whg_minderung = whg_minderung
+        
+        
+#         output_data.append([
+#             haben_row.ID, version, newest_version, matched_id, haben_row.KONTO_ID, datum_anschaffung, datum_veraeusserung,
+#             bestand, haben_row.WHG_ISO, whg_ursprung, whg_minderung, whg_rest
+#         ])
+#         sum_whg_minderung += whg_minderung
+#         if sum_whg_minderung == temp_whg_minderung:            
+#             whg_minderung = sum_whg_minderung
+#             sum_whg_minderung = 0
+#             prev_whg_minderung=0
+
+rec =0
+sub_whg_minderung=0
+prev_whg_minderung=0
+sum_whg_minderung=0
+# Process each Soll record
+for soll_row in df[df['EIN_AUSBUCHUNG'] == 'Soll'].itertuples():
+    version = 0
+    newest_version = 0
+    matched_id = 0
+    # whg_rest = soll_row.WHG_BETRAG_ABSOLUT
+    whg_minderung = 0.0
+    whg_ursprung = soll_row.WHG_BETRAG_VORZEICHEN
+    datum_anschaffung = "02-Jan-00"
+    datum_veraeusserung = soll_row.DATUM_ANSCH_VERAEUSS
+    bestand = "AUSGANG"
+    whg_rest = whg_ursprung + whg_minderung
+    # Initial entry
+    output_data.append([
+        soll_row.ID, version, newest_version, matched_id, soll_row.KONTO_ID, datum_anschaffung, datum_veraeusserung,
+        bestand, soll_row.WHG_ISO, whg_ursprung, whg_minderung, whg_rest
+    ])
+    
+    # Find matching entries
+    while whg_rest < 0:
+        try:
+            if sub_whg_minderung>0:
+                # print(df[df['EIN_AUSBUCHUNG'] == 'Soll'].shape[0])
+                # print ('rec: '+ str(rec))
+                if df[df['EIN_AUSBUCHUNG'] == 'Soll'].shape[0] >=rec:
+                    matched_haben = df[ (df['EIN_AUSBUCHUNG'] == 'Haben')  ].iloc[rec]
+                    rec+=1
+                else:
+                    matched_haben = df[ (df['EIN_AUSBUCHUNG'] == 'Haben')  ].iloc[rec-1]
+                # rec+=1
+            else:
+                matched_haben = df[ (df['EIN_AUSBUCHUNG'] == 'Haben')  ].iloc[rec]
+                rec+=1
+        except IndexError:
+            break  # No more matching entries
+        matched_id = matched_haben.ID
+        temp_whg_minderung = matched_haben.WHG_BETRAG_VORZEICHEN
+        sub_whg_minderung = temp_whg_minderung - prev_whg_minderung
+        print(whg_rest)
+        print(temp_whg_minderung)
+        print("sub: "+str(sub_whg_minderung))
+        if (temp_whg_minderung>whg_rest):
+            if sub_whg_minderung>0:
+                whg_minderung = min(temp_whg_minderung, whg_rest*-1)
+                
+            else:
+                whg_minderung = min(temp_whg_minderung, whg_rest*-1)
+
+        else:
+            whg_minderung = min(sub_whg_minderung, whg_rest*-1)
+
+        
+        whg_rest += whg_minderung
+        datum_veraeusserung = matched_haben.DATUM_ANSCH_VERAEUSS
+        version += 1
+        newest_version = 1 if whg_rest == 0 else 0
+        # if whg_rest == 0 :
+        prev_whg_minderung = whg_minderung
+        
+        output_data.append([
+            soll_row.ID, version, newest_version, matched_id, soll_row.KONTO_ID, datum_anschaffung, datum_veraeusserung,
+            bestand, soll_row.WHG_ISO, whg_ursprung, whg_minderung, whg_rest
+        ])
+        sum_whg_minderung -= whg_minderung
+        if sum_whg_minderung == temp_whg_minderung:            
+            whg_minderung = sum_whg_minderung
+            sum_whg_minderung = 0
+            prev_whg_minderung=0
+
+# Create DataFrame for the output
+output_df = pd.DataFrame(output_data, columns=output_columns)
+
+# Display or save the output DataFrame
+print(output_df)
+output_df.to_csv('out.csv', sep='\t', encoding='utf-8')
