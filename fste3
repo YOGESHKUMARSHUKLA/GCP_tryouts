@@ -1,0 +1,93 @@
+CREATE TABLE your_table_name (
+    ID SERIAL PRIMARY KEY,
+    KONTO_ID VARCHAR(50),
+    BUCHUNGS_ID VARCHAR(50),
+    DATUM DATE,
+    DATUM_VALUTA DATE,
+    DATUM_ANSCH_VERAEUSS DATE,
+    DATUM_ZUFLUSS DATE,
+    WHG_ISO VARCHAR(10),
+    WHG_BETRAG_VORZEICHEN NUMERIC,
+    WHG_BETRAG_ABSOLUT NUMERIC,
+    DEVISEN_KURS NUMERIC,
+    EUR_BETRAG NUMERIC,
+    EIN_AUSBUCHUNG VARCHAR(10),
+    STORNO_KENNZ VARCHAR(10)
+);
+-- Create Table
+CREATE TABLE your_table_name (
+    ID SERIAL PRIMARY KEY,
+    KONTO_ID VARCHAR(50),
+    BUCHUNGS_ID VARCHAR(50),
+    DATUM DATE,
+    DATUM_VALUTA DATE,
+    DATUM_ANSCH_VERAEUSS DATE,
+    DATUM_ZUFLUSS DATE,
+    WHG_ISO VARCHAR(10),
+    WHG_BETRAG_VORZEICHEN NUMERIC,
+    WHG_BETRAG_ABSOLUT NUMERIC,
+    DEVISEN_KURS NUMERIC,
+    EUR_BETRAG NUMERIC,
+    EIN_AUSBUCHUNG VARCHAR(10),
+    STORNO_KENNZ VARCHAR(10)
+);
+
+-- Insert Data
+INSERT INTO your_table_name (
+    ID, KONTO_ID, BUCHUNGS_ID, DATUM, DATUM_VALUTA, DATUM_ANSCH_VERAEUSS, DATUM_ZUFLUSS, WHG_ISO,
+    WHG_BETRAG_VORZEICHEN, WHG_BETRAG_ABSOLUT, DEVISEN_KURS, EUR_BETRAG, EIN_AUSBUCHUNG, STORNO_KENNZ
+) VALUES
+(176286, 'K00553', 'ANFANG_018170', '2022-12-31', '2022-12-31', '2022-12-31', '2022-12-31', 'USD', 5750.73, 5750.73, 1.067650761, 5386.34, 'Haben', '-'),
+(176287, 'K00553', '160076661', '2023-03-20', '2023-03-20', '2023-03-20', '2023-03-20', 'USD', 29792.75, 29792.75, 1.070750000, 27824.19, 'Haben', '-'),
+(176288, 'K00553', '160076662', '2023-03-20', '2023-03-20', '2023-03-20', '2023-03-20', 'USD', -7857.83, 7857.83, 1.073750000, -7318.12, 'Soll', '-'),
+(176289, 'K00553', '', '2023-06-22', '2023-06-22', '2023-06-22', '2023-06-22', 'USD', 34290.42, 34290.42, 1.100500000, 31158.95, 'Haben', '-'),
+(176290, 'K00553', '', '2023-06-22', '2023-06-22', '2023-06-22', '2023-06-22', 'USD', 3090000.00, 3090000.00, 1.039150000, 2973584.18, 'Haben', '-'),
+(176291, 'K00553', '', '2023-06-22', '2023-06-22', '2023-06-22', '2023-06-22', 'USD', -9044.10, 9044.10, 1.103500000, -8195.83, 'Soll', '-'),
+(176292, 'K00553', '', '2023-06-28', '2023-06-28', '2023-06-28', '2023-06-28', 'USD', -3142931.97, 3142931.97, 1.095200000, -2869733.35, 'Soll', '-');
+
+
+
+
+import pandas as pd
+import psycopg2
+from psycopg2 import sql
+
+# Function to get data from PostgreSQL
+def get_data_from_postgres(query, connection_params):
+    conn = psycopg2.connect(**connection_params)
+    df = pd.read_sql_query(query, conn)
+    conn.close()
+    return df
+
+# Connection parameters
+connection_params = {
+    'dbname': 'your_dbname',
+    'user': 'your_username',
+    'password': 'your_password',
+    'host': 'your_host',
+    'port': 'your_port'
+}
+
+# Query to fetch data
+query = """
+SELECT 
+    ID,
+    KONTO_ID,
+    BUCHUNGS_ID,
+    DATUM,
+    DATUM_VALUTA,
+    DATUM_ANSCH_VERAEUSS,
+    DATUM_ZUFLUSS,
+    WHG_ISO,
+    WHG_BETRAG_VORZEICHEN,
+    WHG_BETRAG_ABSOLUT,
+    DEVISEN_KURS,
+    EUR_BETRAG,
+    EIN_AUSBUCHUNG,
+    STORNO_KENNZ
+FROM your_table_name
+"""
+
+# Fetch data from PostgreSQL
+df = get_data_from_postgres(query, connection_params)
+
