@@ -1,0 +1,123 @@
+import os
+import pandas as pd
+import psycopg2
+from psycopg2 import sql
+import sqlalchemy as sa
+from sqlalchemy import text, inspect
+import datetime
+import logging
+import configparser
+
+# Configure logging
+logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
+logger = logging.getLogger()
+
+# Read configuration file
+config = configparser.ConfigParser()
+config.read('config.ini')
+
+# Get the database URL from the configuration file
+DATABASE_URL = config['database']['url']
+
+# Create SQLAlchemy engine
+engine = sa.create_engine(DATABASE_URL)
+
+def get_data_from_postgres(query, connection_parms):
+    try:
+        with psycopg2.connect(**connection_parms) as conn:
+            df = pd.read_sql_query(query, conn)
+            return df
+    except psycopg2.Error as e:
+        logger.error(f"Error fetching data from Postgres: {e}")
+        return None
+
+def table_exists(engine, tabl):
+    try:
+        inspector = inspect(engine)
+        return tabl in inspector.get_table_names()
+    except sa.exc.SQLAlchemyError as e:
+        logger.error(f"Error checking if table exists: {e}")
+        return False
+
+def process_data():
+    connection_parms = {
+        'dbname': 'postgresondocker',
+        'user': 'postgresondocker',
+        'password': 'postgresondocker',
+        'host': 'localhost',
+        'port': '5555'
+    }
+
+    pl_out_columns = [
+        "ACCT_NO", "SELL_POS_ID", "SELL_VERSION", "EFFECTIVE_DATE", "TRANSACTION_DATE", 
+        "NON_TAXABLE_AMOUNT_CCY", "TAXABLE_AMOUNT_CCY", "SHORT_SELL_AMOUNT_CCY", 
+        "TOTAL_PROFIT_EUR", "TOTAL_LOSS_EUR", "EUR_BMG", "COLUMN1", "COLUMN2", 
+        "F40_BMG_TP", "F40_STATUS", "CREATED_AT", "COLUMN3"
+    ]
+    pl_output_data = []
+
+    query2 = """your_query_here"""
+    query = """your_query_here"""
+
+    df_All = get_data_from_postgres(query2, connection_parms)
+    df_All_Position = get_data_from_postgres(query, connection_parms)
+
+    if df_All is not None and df_All_Position is not None:
+        try:
+            unique_date = df_All_Position['FIFO_SORT_DATE'].unique()
+            options = ['INITIAL', 'BUY    ']
+            for date in unique_date:
+                unique_sell_pos_id = df_All_Position['FIFO_SORT_DATE'].unique()
+                df_filter_date = df_All_Position[df_All_Position['FIFO_SORT_DATE'] == date].sort_values(by=['FIFO_SORT_DATE'])
+                unique_sell_pos_id = df_filter_date['SELL_POS_ID'].unique()
+                for sell_id in unique_sell_pos_id:
+                    df_filter_sell_posid_date = df_filter_date[df_filter_date['SELL_POS_ID'] == sell_id]
+                    df_filter_sell_posid_date_version = df_filter_sell_posid_date[df_filter_sell_posid_date['SELL_VERSION'] == df_filter_sell_posid_date['SELL_VERSION'].max()]
+                    ccy_non_taxable = df_filter_sell_posid_date[df_filter_sell_posid_date['TAX_RELEVANCE'] == 'N']
+                    ccy_taxable = df_filter_sell_posid_date[df_filter_sell_posid_date['TAX_RELEVANCE'] == 'Y']
+                    ccy_total_non_taxable = ccy_non_taxable['AMOUNT_CCY'].sum()
+                    ccy_total_taxable = ccy_taxable['AMOUNT_CCY'].sum()
+                    eur_total_profit = ccy_taxable['PROFIT_EUR'].sum()
+                    eur_total_loss = ccy_taxable['LOSS_EUR'].sum()
+                    eur_bmg = eur_total_loss + eur_total_profit
+                    ct = datetime.datetime.now()
+                    f40_bmg_tp = "00131" if eur_bmg >= 0 else "01131"
+                    f40_status = "new"
+                    df = df_All[(df_All['POS_ID'] == sell_id) & (df_All['VERSION_No'] == df_filter_sell_posid_date['SELL_VERSION'].max())]
+                    for match_row in df_filter_sell_posid_date_version.itertuples():
+                        for row in df.itertuples():
+                            ccy_total_short_sell = df['AMT_AFTER'].sum()
+                            effective_date = match_row.FIFO_SORT_DATE
+                            data = [
+                                match_row.ACCT_NO, match_row.SELL_POS_ID, match_row.SELL_VERSION, effective_date, effective_date,
+                                ccy_total_non_taxable, ccy_total_taxable, row.AMT_AFTER, eur_total_profit, eur_total_loss, eur_bmg,
+                                "", "", f40_bmg_tp, f40_status, ct, ""
+                            ]
+                            pl_output_data.append(data)
+            match_output_df = pd.DataFrame(pl_output_data, columns=pl_out_columns)
+            try:
+                match_output_df.to_sql('Profit_Loss', con=engine, if_exists='append', index=False)
+                logger.info("Data inserted into Profit_Loss table successfully.")
+            except sa.exc.SQLAlchemyError as e:
+                logger.error(f"Error inserting data into Profit_Loss table: {e}")
+
+            tab = 'Matching'
+            if table_exists(engine, tab):
+                with engine.connect() as conn:
+                    trans = conn.begin()
+                    try:
+                        res_del = conn.execute(text("""
+                            UPDATE public."Matching" set "TAX_MATCHING" = 'Y' where "TAX_MATCHING" = 'N'
+                        """))
+                        trans.commit()
+                        logger.info("Matching table updated successfully.")
+                    except Exception as e:
+                        trans.rollback()
+                        logger.error(f"Error updating Matching table: {e}")
+        except Exception as e:
+            logger.error(f"Error processing data: {e}")
+    else:
+        logger.error("Error fetching data from Postgres.")
+
+if __name__ == "__main__":
+    process_data()
